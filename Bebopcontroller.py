@@ -32,7 +32,7 @@ def loop(c):
         try:
             while True:
                 print("receiving")
-                ch = c.recv(4096).decode()
+                ch = c.recv(1).decode()
                 print("received:", ch)
                 if ch == "t":
                     print("take off")
@@ -110,6 +110,7 @@ while True:
     else:
         c, addr = s.accept()  # 接続要求の取り出し
         print("connected by", addr)
+        c.send("ok".encode("utf-8"))
         Thread(target=loop, args=(c,)).start()
         time.sleep(0.1)
 

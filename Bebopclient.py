@@ -22,10 +22,11 @@ class Color:
 
 
 def send_to(t):
+    program_bk = ""
     if t == 0:
-        print("Send to all drones. Send \"q\" to quit. Send \"c\" to back.")
+        print("Send to all drones. Press \" \" to enter programming mode. Send \"q\" to quit. Send \"c\" to back.")
     else:
-        print("Send to drone %s  Send \"q\" to quit. Send \"c\" to back." % target)
+        print("Send to drone %s. Send \"q\" to quit. Send \"c\" to back." % target)
     while True:
         if t == 0:
             print("All drones > ", end="", flush=True)
@@ -40,15 +41,41 @@ def send_to(t):
             print(Color.RED+"invalid literal!", Color.END)
             continue
         if command_ == " " and t == 0:
-            print("Programming mode.")
-            print("All drones > ", end="", flush=True)
-            command_ = sys.stdin.readline()
+            print(Color.CYAN+Color.REVERCE +
+                  "Programming mode. "+Color.END+Color.CYAN+" Press enter to send.  Send \"c\" to back. Send empty to load previous program."+Color.END)
+            print("Program > ", end="", flush=True)
+            command_ = sys.stdin.readline().strip()
+            if command_ == "":
+                command_ = program_bk
+            elif command_ == "c":
+                continue
+            to_send = -1
+            program_bk = command_
+            for p in command_:
+                try:
+                    if p.isdecimal():
+                        to_send = int(p)
+                        continue
+                    else:
+                        if int(to_send) < 1 or int(to_send) > 8 or sockets[to_send-1] is None:
+                            print(Color.RED+"invalid drone(" +
+                                  str(to_send)+")!", Color.END)
+                            continue
+                        sockets[to_send-1].send(p.encode("UTF-8"))
+                        print(Color.GREEN +
+                              p + " > [drone "+str(to_send)+"]" + "sent. ", Color.END, flush=True, end="")
+                except Exception as e:
+                    print("error", e)
+            print("")
+            continue
         if command_ == "c":
             break
         if t == 0:
             i = 1
             print(command_ + " > ", end="", flush=True)
             for s in sockets:
+                if s is None:
+                    continue
                 s.send(command)
                 print(Color.GREEN +
                       "[drone "+str(i)+"]" + "sent. ", Color.END, flush=True, end="")
@@ -64,7 +91,7 @@ def send_to(t):
 
 # fd = sys.stdin.fileno()
 # old = termios.tcgetattr(fd)
-sockets = []
+sockets = [None]*10
 
 # hosts = ["192.168.1.1", "192.168.1.2"]
 hosts = ["127.0.0.1", "127.0.0.1"]
@@ -73,16 +100,26 @@ nodelay = 1
 
 i = 1
 for h in hosts:
-    print(Color.YELLOW+"[drone "+str(i)+"]connecting host:",
-          h, " port:", port, Color.END)
-    sock = socket.socket()
-    sock.settimeout(2.0)
-    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
-    sock.connect((h, port))
-    sockets.append(sock)
-    print(Color.GREEN + "[drone "+str(i)+"]connected host:",
-          h, " dport:", port, "source:", sock.getsockname(), Color.END)
-    i += 1
+    try:
+        print(Color.YELLOW+"[drone "+str(i)+"]connecting host:",
+              h, " port:", port, Color.END)
+        sock = socket.socket()
+        sock.settimeout(2.0)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
+        sock.connect((h, port))
+        sock.settimeout(2.0)
+        resp = sock.recv(2)
+        print("server response:", resp)
+        if resp != b"ok":
+            print(Color.RED + "[drone "+str(i)+"]invalid respose!", Color.END)
+            continue
+        sockets[i-1] = sock
+        print(Color.GREEN + "[drone "+str(i)+"]connected host:",
+              h, " dport:", port, "source:", sock.getsockname(), Color.END)
+    except Exception as e:
+        print(Color.RED+"[drone "+str(i)+"]connection failed!", e, Color.END)
+    finally:
+        i += 1
 
 
 try:
@@ -98,10 +135,10 @@ try:
                 for s in sockets:
                     s.send(command.encode('utf-8'))
                 break
-            else:
+            elif int(target) <= len(sockets):
                 send_to(int(target))
             print("end")
-            #command = "q"
+            # command = "q"
             # for s in sockets:
             #    s.send(command.encode('utf-8'))
             # break
@@ -110,6 +147,8 @@ try:
 
 finally:
     for s in sockets:
+        if s is None:
+            continue
         print(Color.PURPLE+"closing:", s.getsockname()[0]+Color.END)
         try:
             s.send("q".encode('utf-8'))
