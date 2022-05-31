@@ -3,6 +3,7 @@ from threading import Thread
 from sys import argv
 import signal
 import time
+from pyparrot.Bebop import Bebop
 
 looping = False
 
@@ -10,25 +11,26 @@ looping = False
 def loop(c):
     global looping
     looping = True
+    bebop = Bebop(drone_type="Bebop2")
     print("connecting to Bebop2")
-    # success = bebop.connect(10)
-    success = True
+    success = bebop.connect(10)
+    #success = True
     print("result:", success)
 
     if (success):
         print("connected to Bebop2!")
-        # print(bebop.sensors.battery)
+        print("battery level:", bebop.sensors.battery)
         print("sleeping")
-        # bebop.smart_sleep(2)
+        bebop.smart_sleep(2)
 
-        # bebop.ask_for_state_update()
+        bebop.ask_for_state_update()
 
         # set safe indoor parameters
-        # bebop.set_max_tilt(5)
-        # bebop.set_max_vertical_speed(1)
+        bebop.set_max_tilt(5)
+        bebop.set_max_vertical_speed(1)
 
         # trying out the new hull protector parameters - set to 1 for a hull protection and 0 without protection
-        # bebop.set_hull_protection(1)
+        bebop.set_hull_protection(1)
         try:
             while True:
                 print("receiving")
@@ -118,5 +120,3 @@ while True:
         c.send("ok".encode("utf-8"))
         Thread(target=loop, args=(c,)).start()
         time.sleep(0.1)
-
-# bebop = Bebop(drone_type="Bebop2")
