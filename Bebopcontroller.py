@@ -11,7 +11,7 @@ def loop(c):
     global looping
     looping = True
     print("connecting to Bebop2")
-    ##success = bebop.connect(10)
+    # success = bebop.connect(10)
     success = True
     print("result:", success)
 
@@ -97,9 +97,14 @@ def loop(c):
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
-##from pyparrot.Bebop import Bebop
+# from pyparrot.Bebop import Bebop
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 5)
+s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
+s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 1)
+s.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 10000, 5000))
 port = 8080
 s.bind(('', port))  # socketに名前をつける
 print("listening port:"+str(port))
@@ -114,4 +119,4 @@ while True:
         Thread(target=loop, args=(c,)).start()
         time.sleep(0.1)
 
-##bebop = Bebop(drone_type="Bebop2")
+# bebop = Bebop(drone_type="Bebop2")
