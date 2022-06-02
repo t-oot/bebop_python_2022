@@ -93,8 +93,8 @@ def send_to(t):
 # old = termios.tcgetattr(fd)
 sockets = [None]*10
 
-# hosts = ["192.168.1.1", "192.168.1.2"]
-hosts = ["127.0.0.1", "127.0.0.1"]
+hosts = ["192.168.1.1","192.168.1.2", "192.168.1.3"]
+#hosts = ["127.0.0.1", "127.0.0.1"]
 port = 8080
 nodelay = 1
 
